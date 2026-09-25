@@ -40,7 +40,7 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-3 md:flex">
           <LanguageSwitcher />
-          <Button render={<a href="#visit" />} className="h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#17120b] hover:bg-[#d7b567]">
+          <Button nativeButton={false} render={<a href="#visit" />} className="h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#17120b] hover:bg-[#d7b567]">
             {t('nav.tickets')} <ArrowUpRight className="size-4 rtl:-scale-x-100" />
           </Button>
         </div>
