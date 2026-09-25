@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
 export function VisitSection() {
@@ -15,9 +16,9 @@ export function VisitSection() {
         <h2 className="display-type max-w-4xl text-5xl font-medium leading-[.98] tracking-[-.04em] sm:text-7xl lg:text-8xl">{t('visit.title')}</h2>
         <div className="mt-8 flex flex-col items-start gap-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-2xl text-base leading-7 text-white/72 sm:text-lg sm:leading-8">{t('visit.body')}</p>
-          <a href="#programme" className="inline-flex min-h-12 shrink-0 items-center gap-3 rounded-full bg-[#d7b567] px-6 py-3 text-sm font-bold text-[#17120b] transition-colors hover:bg-white">
+          <Link href="/booking" className="inline-flex min-h-12 shrink-0 items-center gap-3 rounded-full bg-[#d7b567] px-6 py-3 text-sm font-bold text-[#17120b] transition-colors hover:bg-white">
             {t('visit.button')} <ArrowUpRight className="size-4 rtl:-scale-x-100" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

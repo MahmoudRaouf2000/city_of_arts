@@ -1,6 +1,7 @@
 'use client';
 
 import { MapPin } from 'lucide-react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { BrandMark } from '@/src/components/brand-mark';
 
@@ -16,7 +17,7 @@ export function SiteFooter() {
           </div>
           <div>
             <p className="mb-4 text-[11px] font-bold uppercase tracking-[.18em] text-[#d7b567]">{t('footer.programme')}</p>
-            <div className="flex flex-col gap-3 text-sm text-white/65"><a href="#programme" className="hover:text-white">{t('nav.events')}</a><a href="#venues" className="hover:text-white">{t('nav.venues')}</a><a href="#about" className="hover:text-white">{t('nav.about')}</a></div>
+            <div className="flex flex-col gap-3 text-sm text-white/65"><Link href="/#programme" className="hover:text-white">{t('nav.events')}</Link><Link href="/#venues" className="hover:text-white">{t('nav.venues')}</Link><Link href="/#about" className="hover:text-white">{t('nav.about')}</Link></div>
           </div>
           <div>
             <p className="mb-4 text-[11px] font-bold uppercase tracking-[.18em] text-[#d7b567]">{t('footer.information')}</p>

@@ -1,0 +1,421 @@
+'use client';
+
+import type React from 'react';
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  CreditCard,
+  MapPin,
+  ShieldCheck,
+  Ticket,
+  UserRound,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Progress } from '@/components/ui/progress';
+import { BrandMark } from '@/src/components/brand-mark';
+import { LanguageSwitcher } from '@/src/components/language-switcher';
+import { events, type EventItem } from '@/src/data/events';
+import { useLanguageSync } from '@/src/hooks/use-language-sync';
+import '@/src/lib/i18n';
+
+type Tier = 'vip' | 'gold' | 'silver';
+
+type Seat = {
+  id: string;
+  label: string;
+  tier: Tier;
+  price: number;
+  reserved: boolean;
+};
+
+const tierPrices: Record<Tier, number> = { vip: 400, gold: 300, silver: 150 };
+const reservedSeats = new Set(['A4', 'B7', 'C3', 'D6', 'E2', 'F8', 'G5', 'H1']);
+
+const seats: Seat[] = Array.from({ length: 8 }, (_, rowIndex) => {
+  const row = String.fromCharCode(65 + rowIndex);
+  const tier: Tier = rowIndex < 2 ? 'vip' : rowIndex < 4 ? 'gold' : 'silver';
+  return Array.from({ length: 8 }, (_, seatIndex) => {
+    const label = `${row}${seatIndex + 1}`;
+    return { id: label, label, tier, price: tierPrices[tier], reserved: reservedSeats.has(label) };
+  });
+}).flat();
+
+const copy = {
+  en: {
+    back: 'Back to programme',
+    eyebrow: 'Official booking journey',
+    title: 'Choose your night at the opera.',
+    intro: 'Select your performance and seats, then add your contact details to review the booking.',
+    steps: ['Seats', 'Your details', 'Confirmation'],
+    selectEvent: 'Select performance',
+    chooseSeats: 'Choose your seats',
+    seatHelp: 'Select up to 8 available seats. Prices are shown in Egyptian pounds.',
+    stage: 'Stage',
+    available: 'Available',
+    selected: 'Selected',
+    unavailable: 'Unavailable',
+    ticketTypes: { vip: 'VIP', gold: 'Gold', silver: 'Silver' },
+    each: 'each',
+    selectedSeats: 'Selected seats',
+    noSeats: 'No seats selected yet',
+    total: 'Total',
+    continue: 'Continue to details',
+    firstName: 'Full name',
+    firstNamePlaceholder: 'Enter the ticket holder name',
+    email: 'Email address',
+    emailPlaceholder: 'name@example.com',
+    phone: 'Mobile number',
+    phonePlaceholder: '+20 1xx xxx xxxx',
+    detailsTitle: 'Who should receive the tickets?',
+    detailsHelp: 'We will use these details for the booking confirmation and any performance updates.',
+    terms: 'I confirm that the booking details are correct and accept the venue terms.',
+    review: 'Review your booking',
+    reviewHelp: 'Check the details below before creating your booking reference.',
+    editSeats: 'Edit seats',
+    editDetails: 'Edit details',
+    confirm: 'Confirm booking',
+    summary: 'Booking summary',
+    tickets: 'tickets',
+    ticket: 'ticket',
+    demoNotice: 'Online payment is not connected in this demo. No amount will be charged.',
+    secure: 'Secure checkout design',
+    confirmed: 'Your booking is ready',
+    confirmedBody: 'Keep this reference with you. A copy of this booking has been saved on this device.',
+    reference: 'Booking reference',
+    home: 'Return to homepage',
+    another: 'Book another performance',
+    required: 'Please complete all required fields and accept the terms.',
+    seatsRequired: 'Choose at least one available seat to continue.',
+    maxSeats: 'A maximum of 8 seats can be selected per booking.',
+    for: 'for',
+  },
+  ar: {
+    back: 'العودة إلى البرنامج',
+    eyebrow: 'رحلة الحجز الرسمية',
+    title: 'اختر ليلتك في الأوبرا.',
+    intro: 'اختر العرض والمقاعد، ثم أضف بيانات التواصل لمراجعة الحجز وتأكيده.',
+    steps: ['المقاعد', 'بياناتك', 'التأكيد'],
+    selectEvent: 'اختر العرض',
+    chooseSeats: 'اختر مقاعدك',
+    seatHelp: 'يمكنك اختيار حتى ٨ مقاعد متاحة. الأسعار بالجنيه المصري.',
+    stage: 'المسرح',
+    available: 'متاح',
+    selected: 'محدد',
+    unavailable: 'غير متاح',
+    ticketTypes: { vip: 'VIP', gold: 'ذهبي', silver: 'فضي' },
+    each: 'للمقعد',
+    selectedSeats: 'المقاعد المختارة',
+    noSeats: 'لم تختر أي مقعد بعد',
+    total: 'الإجمالي',
+    continue: 'متابعة إلى البيانات',
+    firstName: 'الاسم بالكامل',
+    firstNamePlaceholder: 'أدخل اسم صاحب التذاكر',
+    email: 'البريد الإلكتروني',
+    emailPlaceholder: 'name@example.com',
+    phone: 'رقم الهاتف',
+    phonePlaceholder: '+20 1xx xxx xxxx',
+    detailsTitle: 'لمن نرسل التذاكر؟',
+    detailsHelp: 'سنستخدم هذه البيانات لتأكيد الحجز وإرسال أي تحديثات تخص العرض.',
+    terms: 'أؤكد صحة بيانات الحجز وأوافق على شروط دخول المسرح.',
+    review: 'راجع حجزك',
+    reviewHelp: 'تأكد من البيانات التالية قبل إنشاء رقم الحجز.',
+    editSeats: 'تعديل المقاعد',
+    editDetails: 'تعديل البيانات',
+    confirm: 'تأكيد الحجز',
+    summary: 'ملخص الحجز',
+    tickets: 'تذاكر',
+    ticket: 'تذكرة',
+    demoNotice: 'الدفع الإلكتروني غير متصل في هذه النسخة التجريبية، ولن يتم خصم أي مبلغ.',
+    secure: 'تصميم دفع آمن',
+    confirmed: 'حجزك جاهز',
+    confirmedBody: 'احتفظ بهذا الرقم معك. تم حفظ نسخة من الحجز على هذا الجهاز.',
+    reference: 'رقم الحجز',
+    home: 'العودة للرئيسية',
+    another: 'حجز عرض آخر',
+    required: 'أكمل كل البيانات المطلوبة ووافق على الشروط.',
+    seatsRequired: 'اختر مقعدًا متاحًا واحدًا على الأقل للمتابعة.',
+    maxSeats: 'الحد الأقصى ٨ مقاعد في الحجز الواحد.',
+    for: 'باسم',
+  },
+} as const;
+
+function formatMoney(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value);
+}
+
+export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
+  useLanguageSync();
+  const { t, i18n } = useTranslation();
+  const language = i18n.resolvedLanguage === 'ar' ? 'ar' : 'en';
+  const c = copy[language];
+  const locale = language === 'ar' ? 'ar-EG' : 'en-GB';
+  const [eventId, setEventId] = useState<EventItem['id']>(() => events.some((event) => event.id === initialEvent) ? initialEvent as EventItem['id'] : 'swanLake');
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [form, setForm] = useState({ name: '', email: '', phone: '', terms: false });
+  const [error, setError] = useState('');
+  const [reference, setReference] = useState('');
+
+  const selectedEvent = events.find((event) => event.id === eventId) ?? events[0];
+  const selectedSeats = useMemo(() => seats.filter((seat) => selected.includes(seat.id)), [selected]);
+  const total = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+  const date = new Date(selectedEvent.date);
+  const formattedDate = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+  const eventTitle = t(`events.items.${selectedEvent.id}.title`);
+  const venue = t(`events.items.${selectedEvent.id}.venue`);
+  const ForwardIcon = language === 'ar' ? ArrowLeft : ArrowRight;
+  const BackIcon = language === 'ar' ? ChevronRight : ChevronLeft;
+
+  const toggleSeat = (seat: Seat) => {
+    if (seat.reserved) return;
+    setError('');
+    setSelected((current) => {
+      if (current.includes(seat.id)) return current.filter((id) => id !== seat.id);
+      if (current.length >= 8) {
+        setError(c.maxSeats);
+        return current;
+      }
+      return [...current, seat.id];
+    });
+  };
+
+  const goToDetails = () => {
+    if (!selected.length) return setError(c.seatsRequired);
+    setError('');
+    setStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const submitDetails = (event: React.SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    if (!form.name.trim() || !emailValid || form.phone.trim().length < 8 || !form.terms) return setError(c.required);
+    setError('');
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const confirmBooking = () => {
+    const code = `COH-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const booking = { reference: code, eventId, seats: selected, total, customer: form, createdAt: new Date().toISOString() };
+    window.localStorage.setItem('cairo-opera-last-booking', JSON.stringify(booking));
+    setReference(code);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resetBooking = () => {
+    setStep(0);
+    setSelected([]);
+    setForm({ name: '', email: '', phone: '', terms: false });
+    setReference('');
+    setError('');
+  };
+
+  return (
+    <div className="min-h-screen bg-[#eee9df] text-[#171514]">
+      <header className="border-b border-white/10 bg-[#121010] text-white">
+        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <Link href="/" className="flex items-center gap-3" aria-label={t('brand.name')}>
+            <BrandMark />
+            <span className="hidden text-sm font-semibold sm:block">{t('brand.name')}</span>
+          </Link>
+          <LanguageSwitcher />
+        </div>
+      </header>
+
+      <main>
+        <section className="border-b border-[#d8d0c2] bg-[#191616] text-white">
+          <div className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+            <Link href="/#programme" className="mb-8 inline-flex items-center gap-2 text-xs font-semibold text-white/60 transition-colors hover:text-[#e0c276]">
+              <BackIcon className="size-4" /> {c.back}
+            </Link>
+            <div className="grid gap-7 lg:grid-cols-[1fr_440px] lg:items-end">
+              <div>
+                <p className="mb-3 text-xs font-bold uppercase tracking-[.2em] text-[#d7b567]">{c.eyebrow}</p>
+                <h1 className="display-type max-w-3xl text-4xl font-medium leading-tight tracking-[-.035em] sm:text-6xl">{reference ? c.confirmed : c.title}</h1>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">{reference ? c.confirmedBody : c.intro}</p>
+              </div>
+              {!reference && (
+                <div className="rounded-sm border border-white/12 bg-white/[.04] p-5">
+                  <div className="mb-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-[.14em] text-white/55">
+                    <span>{c.steps[step]}</span><bdi dir="ltr">{step + 1} / 3</bdi>
+                  </div>
+                  <Progress value={((step + 1) / 3) * 100} className="[&_[data-slot=progress-indicator]]:bg-[#d7b567] [&_[data-slot=progress-track]]:bg-white/15" />
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] text-white/45">
+                    {c.steps.map((label, index) => <span key={label} className={index <= step ? 'text-white' : ''}>{label}</span>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {reference ? (
+          <Confirmation reference={reference} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
+        ) : (
+          <div className="mx-auto grid max-w-[1440px] gap-7 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
+            <section className="border border-[#d6cfc3] bg-[#faf8f2] p-5 shadow-[0_18px_55px_rgba(32,22,16,.08)] sm:p-8">
+              {step === 0 && (
+                <div>
+                  <div className="grid gap-5 border-b border-[#ded7cc] pb-7 sm:grid-cols-[1fr_280px] sm:items-end">
+                    <div><h2 className="display-type text-3xl font-medium">{c.chooseSeats}</h2><p className="mt-2 text-sm leading-6 text-[#6b645c]">{c.seatHelp}</p></div>
+                    <div>
+                      <Label htmlFor="performance" className="mb-2 block text-xs font-bold uppercase tracking-[.12em] text-[#6e2635]">{c.selectEvent}</Label>
+                      <NativeSelect id="performance" value={eventId} onChange={(event) => { setEventId(event.target.value as EventItem['id']); setSelected([]); }} className="w-full [&_select]:h-11 [&_select]:rounded-sm [&_select]:bg-white rtl:[&_select]:pr-3 rtl:[&_select]:pl-9 rtl:[_[data-slot=native-select-icon]]:right-auto rtl:[_[data-slot=native-select-icon]]:left-2.5">
+                        {events.map((event) => <NativeSelectOption key={event.id} value={event.id}>{t(`events.items.${event.id}.title`)}</NativeSelectOption>)}
+                      </NativeSelect>
+                    </div>
+                  </div>
+
+                  <div className="mt-7 overflow-x-auto pb-2">
+                    <div className="mx-auto min-w-[310px] max-w-[560px]">
+                      <div className="mx-auto mb-8 w-[78%] rounded-b-[50%] border-t-4 border-[#d7b567] bg-[#272220] py-2 text-center text-[10px] font-bold uppercase tracking-[.22em] text-white/60">{c.stage}</div>
+                      <div className="space-y-2">
+                        {Array.from({ length: 8 }, (_, rowIndex) => {
+                          const row = String.fromCharCode(65 + rowIndex);
+                          return (
+                            <div key={row} className="grid grid-cols-[20px_repeat(8,minmax(30px,1fr))_20px] items-center gap-1.5 sm:gap-2">
+                              <span className="text-center text-[10px] font-bold text-[#8a8176]">{row}</span>
+                              {seats.filter((seat) => seat.label.startsWith(row)).map((seat) => {
+                                const isSelected = selected.includes(seat.id);
+                                return (
+                                  <button key={seat.id} type="button" disabled={seat.reserved} onClick={() => toggleSeat(seat)} aria-pressed={isSelected} aria-label={`${seat.label} · ${c.ticketTypes[seat.tier]} · ${formatMoney(seat.price, locale)}`}
+                                    className={`aspect-square min-h-8 rounded-t-lg border text-[10px] font-bold transition-all ${seat.reserved ? 'cursor-not-allowed border-[#d8d3ca] bg-[#ddd8cf] text-[#aaa297]' : isSelected ? 'border-[#7e2133] bg-[#7e2133] text-white shadow-[0_5px_12px_rgba(126,33,51,.25)]' : seat.tier === 'vip' ? 'border-[#b99647] bg-[#f2e5b9] text-[#594315] hover:-translate-y-0.5' : seat.tier === 'gold' ? 'border-[#a98543] bg-[#ead5a5] text-[#604b24] hover:-translate-y-0.5' : 'border-[#a9adb2] bg-[#e7e8e8] text-[#4e5358] hover:-translate-y-0.5'}`}
+                                  >{seat.label.slice(1)}</button>
+                                );
+                              })}
+                              <span className="text-center text-[10px] font-bold text-[#8a8176]">{row}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-3 border-y border-[#ded7cc] py-4 text-xs text-[#625b53]">
+                    <Legend color="bg-[#f2e5b9] border-[#b99647]" label={`${c.ticketTypes.vip} · ${formatMoney(400, locale)}`} />
+                    <Legend color="bg-[#ead5a5] border-[#a98543]" label={`${c.ticketTypes.gold} · ${formatMoney(300, locale)}`} />
+                    <Legend color="bg-[#e7e8e8] border-[#a9adb2]" label={`${c.ticketTypes.silver} · ${formatMoney(150, locale)}`} />
+                    <Legend color="bg-[#7e2133] border-[#7e2133]" label={c.selected} />
+                    <Legend color="bg-[#ddd8cf] border-[#d8d3ca]" label={c.unavailable} />
+                  </div>
+
+                  {error && <p role="alert" className="mt-5 text-sm font-semibold text-[#9d2538]">{error}</p>}
+                  <div className="mt-7 flex justify-end">
+                    <Button type="button" onClick={goToDetails} className="h-12 rounded-full bg-[#7e2133] px-6 text-sm font-bold hover:bg-[#601625]">{c.continue} <ForwardIcon className="size-4" /></Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 1 && (
+                <form onSubmit={submitDetails} noValidate>
+                  <h2 className="display-type text-3xl font-medium">{c.detailsTitle}</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b645c]">{c.detailsHelp}</p>
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                    <Field label={c.firstName} htmlFor="name"><Input id="name" autoComplete="name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={c.firstNamePlaceholder} className="h-12 rounded-sm bg-white px-4" required /></Field>
+                    <Field label={c.phone} htmlFor="phone"><Input id="phone" type="tel" autoComplete="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder={c.phonePlaceholder} className="h-12 rounded-sm bg-white px-4" required /></Field>
+                    <div className="sm:col-span-2"><Field label={c.email} htmlFor="email"><Input id="email" type="email" autoComplete="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder={c.emailPlaceholder} className="h-12 rounded-sm bg-white px-4" required /></Field></div>
+                  </div>
+                  <Label className="mt-7 flex cursor-pointer items-start gap-3 rounded-sm border border-[#ded7cc] bg-white p-4 text-sm leading-6 text-[#514b45]">
+                    <Checkbox checked={form.terms} onCheckedChange={(checked) => setForm({ ...form, terms: checked === true })} className="mt-1" />
+                    <span>{c.terms}</span>
+                  </Label>
+                  {error && <p role="alert" className="mt-5 text-sm font-semibold text-[#9d2538]">{error}</p>}
+                  <div className="mt-8 flex flex-wrap justify-between gap-3">
+                    <Button type="button" variant="outline" onClick={() => setStep(0)} className="h-12 rounded-full px-5"><BackIcon className="size-4" /> {c.editSeats}</Button>
+                    <Button type="submit" className="h-12 rounded-full bg-[#7e2133] px-6 font-bold hover:bg-[#601625]">{c.continue} <ForwardIcon className="size-4" /></Button>
+                  </div>
+                </form>
+              )}
+
+              {step === 2 && (
+                <div>
+                  <h2 className="display-type text-3xl font-medium">{c.review}</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#6b645c]">{c.reviewHelp}</p>
+                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                    <ReviewBlock icon={<Ticket />} title={eventTitle} lines={[formattedDate, `${selectedEvent.time} · ${venue}`, selectedSeats.map((seat) => seat.label).join(' · ')]} />
+                    <ReviewBlock icon={<UserRound />} title={form.name} lines={[form.email, form.phone]} />
+                  </div>
+                  <div className="mt-6 flex items-start gap-3 rounded-sm border border-[#e0c78c] bg-[#fbf1d8] p-4 text-sm leading-6 text-[#5f4a1f]"><CreditCard className="mt-0.5 size-5 shrink-0" /><p>{c.demoNotice}</p></div>
+                  <div className="mt-8 flex flex-wrap justify-between gap-3">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-12 rounded-full px-5"><BackIcon className="size-4" /> {c.editDetails}</Button>
+                    <Button type="button" onClick={confirmBooking} className="h-12 rounded-full bg-[#7e2133] px-7 font-bold hover:bg-[#601625]"><Check className="size-4" /> {c.confirm}</Button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <BookingSummary event={selectedEvent} eventTitle={eventTitle} venue={venue} formattedDate={formattedDate} selectedSeats={selectedSeats} total={total} locale={locale} c={c} />
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return <span className="inline-flex items-center gap-2"><span className={`size-3 rounded-t-sm border ${color}`} />{label}</span>;
+}
+
+function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
+  return <div><Label htmlFor={htmlFor} className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[#514943]">{label}</Label>{children}</div>;
+}
+
+function ReviewBlock({ icon, title, lines }: { icon: React.ReactNode; title: string; lines: string[] }) {
+  return <div className="border border-[#ded7cc] bg-white p-5"><div className="mb-4 flex size-10 items-center justify-center rounded-full bg-[#f0e5c9] text-[#7e2133] [&_svg]:size-5">{icon}</div><p className="font-bold">{title}</p>{lines.map((line) => <p key={line} className="mt-1 text-sm leading-6 text-[#6d665e]">{line}</p>)}</div>;
+}
+
+type Copy = (typeof copy)['en'] | (typeof copy)['ar'];
+
+function BookingSummary({ event, eventTitle, venue, formattedDate, selectedSeats, total, locale, c }: { event: EventItem; eventTitle: string; venue: string; formattedDate: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy }) {
+  return (
+    <aside className="h-fit border border-[#2b2624] bg-[#181514] text-white shadow-[0_18px_55px_rgba(32,22,16,.16)] lg:sticky lg:top-6">
+      <div className="relative h-48 overflow-hidden"><Image src={event.image} alt="" fill sizes="360px" className="object-cover opacity-65" style={{ objectPosition: event.imagePosition }} /><div className="absolute inset-0 bg-gradient-to-t from-[#181514] to-transparent" /><p className="display-type absolute inset-x-5 bottom-4 text-2xl font-medium">{eventTitle}</p></div>
+      <div className="p-5 sm:p-6">
+        <h2 className="text-xs font-bold uppercase tracking-[.16em] text-[#d7b567]">{c.summary}</h2>
+        <div className="mt-5 space-y-3 text-sm text-white/68">
+          <p className="flex gap-3"><CalendarDays className="mt-0.5 size-4 shrink-0 text-[#d7b567]" />{formattedDate}</p>
+          <p className="flex gap-3"><Clock3 className="mt-0.5 size-4 shrink-0 text-[#d7b567]" /><bdi>{event.time}</bdi></p>
+          <p className="flex gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-[#d7b567]" />{venue}</p>
+        </div>
+        <div className="my-5 border-t border-white/12" />
+        <div className="flex items-start justify-between gap-4 text-sm"><span className="text-white/55">{c.selectedSeats}</span><span className="max-w-[190px] text-end font-semibold">{selectedSeats.length ? selectedSeats.map((seat) => seat.label).join(', ') : c.noSeats}</span></div>
+        <div className="mt-5 flex items-end justify-between border-t border-white/12 pt-5"><span className="text-sm text-white/55">{c.total}</span><strong className="display-type text-3xl font-medium text-[#ead18f]">{formatMoney(total, locale)}</strong></div>
+        <div className="mt-5 flex items-center gap-2 text-[11px] text-white/45"><ShieldCheck className="size-4 text-[#d7b567]" />{c.secure}</div>
+      </div>
+    </aside>
+  );
+}
+
+function Confirmation({ reference, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
+  return (
+    <section className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
+      <div className="overflow-hidden border border-[#d3cbbc] bg-[#faf8f2] shadow-[0_20px_65px_rgba(35,22,16,.12)]">
+        <div className="flex flex-col items-center border-b border-dashed border-[#cfc5b3] px-6 py-10 text-center sm:px-12">
+          <span className="grid size-16 place-items-center rounded-full bg-[#7e2133] text-white"><Check className="size-8" /></span>
+          <p className="mt-6 text-xs font-bold uppercase tracking-[.17em] text-[#7e2133]">{c.reference}</p>
+          <p className="display-type mt-2 text-3xl font-semibold tracking-[.06em] sm:text-4xl" dir="ltr">{reference}</p>
+        </div>
+        <div className="grid gap-6 p-6 sm:grid-cols-2 sm:p-10">
+          <div><p className="text-xs font-bold uppercase tracking-[.12em] text-[#7e2133]">{eventTitle}</p><p className="mt-3 text-sm leading-7 text-[#5f5850]">{formattedDate}<br />{venue}</p></div>
+          <div className="sm:text-end"><p className="text-sm font-bold">{selectedSeats.map((seat) => seat.label).join(' · ')}</p><p className="display-type mt-3 text-3xl font-medium text-[#7e2133]">{formatMoney(total, locale)}</p></div>
+        </div>
+        <div className="mx-6 mb-6 flex items-start gap-3 bg-[#f5ead0] p-4 text-sm leading-6 text-[#614d25] sm:mx-10 sm:mb-10"><CreditCard className="mt-0.5 size-5 shrink-0" /><p>{c.demoNotice}</p></div>
+      </div>
+      <div className="mt-7 flex flex-wrap justify-center gap-3"><Link href="/" className="inline-flex h-12 items-center justify-center rounded-full border border-[#d6d0c3] bg-[#f2efe8] px-6 text-sm font-medium transition-colors hover:bg-[#e5e0d5]">{c.home}</Link><Button type="button" onClick={onReset} className="h-12 rounded-full bg-[#7e2133] px-6 font-bold hover:bg-[#601625]">{c.another}</Button></div>
+    </section>
+  );
+}

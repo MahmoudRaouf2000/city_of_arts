@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowUpRight, CalendarDays, Clock3, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, Clock3, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { events, type EventItem } from '@/src/data/events';
 
@@ -29,9 +30,9 @@ function EventCard({ event, featured = false }: { event: EventItem; featured?: b
         <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/18 pt-4 text-xs text-white/70">
           <span className="inline-flex items-center gap-2"><Clock3 className="size-3.5 text-[#d7b567]" /> <bdi>{event.time}</bdi></span>
           <span className="inline-flex items-center gap-2"><MapPin className="size-3.5 text-[#d7b567]" /> {t(`events.items.${event.id}.venue`)}</span>
-          <a href="#visit" aria-label={`${t('actions.details')}: ${title}`} className="ms-auto grid size-9 place-items-center rounded-full border border-white/25 transition-colors group-hover:border-[#d7b567] group-hover:bg-[#d7b567] group-hover:text-[#17120b]">
+          <Link href={`/booking?event=${event.id}`} aria-label={`${t('actions.details')}: ${title}`} className="ms-auto grid size-9 place-items-center rounded-full border border-white/25 transition-colors group-hover:border-[#d7b567] group-hover:bg-[#d7b567] group-hover:text-[#17120b]">
             <ArrowUpRight className="size-4 rtl:-scale-x-100" />
-          </a>
+          </Link>
         </div>
       </div>
     </article>

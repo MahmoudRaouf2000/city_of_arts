@@ -1,6 +1,6 @@
 {
   "brand": { "name": "Cairo Opera House", "arabic": "دار الأوبرا المصرية", "eyebrow": "Egypt's National Cultural Stage" },
-  "nav": { "home": "Home", "events": "Shows & Events", "venues": "Venues", "about": "About", "tickets": "Plan your visit" },
+  "nav": { "home": "Home", "events": "Shows & Events", "venues": "Venues", "about": "About", "tickets": "Book tickets" },
   "actions": { "explore": "Explore the programme", "details": "Event details", "allEvents": "View full programme", "language": "Change language", "menu": "Open menu", "close": "Close menu", "previous": "Previous story", "next": "Next story" },
   "hero": { "kicker": "The 2026 season", "title": "Where Egypt's stories take the stage.", "description": "Opera, ballet, music and theatre — brought together in the heart of Cairo.", "featured": "Featured performance", "featuredTitle": "A celebration of movement", "featuredMeta": "Main Hall · Cairo Opera House" },
   "events": {
@@ -21,6 +21,6 @@
     "small": { "name": "Small Hall", "detail": "Intimate acoustics · Recitals & contemporary work" }
   },
   "about": { "eyebrow": "Since 1988", "title": "A home for artistic exchange.", "body": "Cairo Opera House brings Egyptian and international artists together across music, dance and theatre, sustaining a living cultural dialogue for audiences of every generation.", "stat1": "Year opened", "stat2": "Distinct venues", "stat3": "One cultural landmark" },
-  "visit": { "eyebrow": "Your evening starts here", "title": "Make a night of it.", "body": "Explore the programme, choose your performance and arrive early to enjoy the grounds on Gezira Island.", "button": "Browse performances" },
+  "visit": { "eyebrow": "Your evening starts here", "title": "Make a night of it.", "body": "Explore the programme, choose your performance and arrive early to enjoy the grounds on Gezira Island.", "button": "Book your tickets" },
   "footer": { "summary": "Egypt's home for opera, music, ballet and theatre.", "address": "El Tahrir Street, Gezira, Cairo", "programme": "Programme", "information": "Visitor information", "copyright": "Cairo Opera House. All rights reserved." }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -9,9 +10,9 @@ import { BrandMark } from '@/src/components/brand-mark';
 import { LanguageSwitcher } from '@/src/components/language-switcher';
 
 const navItems = [
-  ['nav.events', '#programme'],
-  ['nav.venues', '#venues'],
-  ['nav.about', '#about'],
+  ['nav.events', '/#programme'],
+  ['nav.venues', '/#venues'],
+  ['nav.about', '/#about'],
 ] as const;
 
 export function SiteHeader() {
@@ -22,27 +23,27 @@ export function SiteHeader() {
   return (
     <header className="absolute inset-x-0 top-0 z-40 border-b border-white/15 text-white">
       <div className="mx-auto flex h-24 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <a href="#top" className="flex items-center gap-3.5" aria-label={t('brand.name')}>
+        <Link href="/#top" className="flex items-center gap-3.5" aria-label={t('brand.name')}>
           <BrandMark />
           <span className="hidden flex-col leading-none min-[420px]:flex">
             <span className="text-[15px] font-semibold tracking-tight sm:text-base">{t('brand.name')}</span>
             <span className="mt-1 text-[11px] text-white/60">{t('brand.arabic')}</span>
           </span>
-        </a>
+        </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-8 text-sm font-medium lg:flex">
           {navItems.map(([label, href]) => (
-            <a key={label} href={href} className="relative py-2 text-white/75 transition-colors hover:text-white after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-[#d7b567] after:transition-transform hover:after:scale-x-100">
+            <Link key={label} href={href} className="relative py-2 text-white/75 transition-colors hover:text-white after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-[#d7b567] after:transition-transform hover:after:scale-x-100">
               {t(label)}
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
           <LanguageSwitcher />
-          <Button nativeButton={false} render={<a href="#visit" />} className="h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#17120b] hover:bg-[#d7b567]">
+          <Link href="/booking" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-[#17120b] transition-colors hover:bg-[#d7b567]">
             {t('nav.tickets')} <ArrowUpRight className="size-4 rtl:-scale-x-100" />
-          </Button>
+          </Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 md:hidden">
@@ -60,13 +61,13 @@ export function SiteHeader() {
               </SheetHeader>
               <nav className="flex flex-col px-5 pt-8" aria-label="Mobile">
                 {navItems.map(([label, href], index) => (
-                  <a key={label} href={href} onClick={() => setMenuOpen(false)} className="display-type flex items-center justify-between border-b border-white/10 py-5 text-2xl">
+                  <Link key={label} href={href} onClick={() => setMenuOpen(false)} className="display-type flex items-center justify-between border-b border-white/10 py-5 text-2xl">
                     {t(label)} <span className="text-xs text-[#d7b567]">0{index + 1}</span>
-                  </a>
+                  </Link>
                 ))}
-                <a href="#visit" onClick={() => setMenuOpen(false)} className="mt-8 flex items-center justify-center gap-2 rounded-full bg-[#d7b567] px-5 py-3.5 font-semibold text-[#17120b]">
+                <Link href="/booking" onClick={() => setMenuOpen(false)} className="mt-8 flex items-center justify-center gap-2 rounded-full bg-[#d7b567] px-5 py-3.5 font-semibold text-[#17120b]">
                   {t('nav.tickets')} <ArrowUpRight className="size-4 rtl:-scale-x-100" />
-                </a>
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>
