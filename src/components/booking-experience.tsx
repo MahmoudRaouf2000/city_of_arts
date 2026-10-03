@@ -271,7 +271,7 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
         </section>
 
         {reference ? (
-          <Confirmation reference={reference} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
+          <Confirmation reference={reference} eventId={selectedEvent.id} language={language} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
         ) : (
           <div className="mx-auto grid max-w-[1440px] gap-7 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
             <section className="border border-[#d6cfc3] bg-[#faf8f2] p-5 shadow-[0_18px_55px_rgba(32,22,16,.08)] sm:p-8">
@@ -407,19 +407,14 @@ function BookingSummary({ event, eventTitle, venue, formattedDate, selectedSeats
   );
 }
 
-function Confirmation({ reference, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
-  const qrValue = JSON.stringify({
-    version: 1,
-    issuer: 'Cairo Opera House',
-    reference,
-    event: eventTitle,
-    date: formattedDate,
-    venue,
-    seats: selectedSeats.map((seat) => seat.label),
-    total,
-    currency: 'EGP',
-    demo: true,
-  });
+function Confirmation({ reference, eventId, language, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; eventId: EventItem['id']; language: 'ar' | 'en'; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
+  const ticketUrl = new URL('/ticket', typeof window === 'undefined' ? 'https://cairo-opera-house.me974931.chatgpt.site' : window.location.origin);
+  ticketUrl.searchParams.set('ref', reference);
+  ticketUrl.searchParams.set('event', eventId);
+  ticketUrl.searchParams.set('seats', selectedSeats.map((seat) => seat.label).join(','));
+  ticketUrl.searchParams.set('total', String(total));
+  ticketUrl.searchParams.set('lang', language);
+  const qrValue = ticketUrl.toString();
 
   return (
     <section className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
