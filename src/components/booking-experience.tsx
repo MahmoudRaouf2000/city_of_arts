@@ -19,6 +19,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -95,6 +96,9 @@ const copy = {
     confirmed: 'Your booking is ready',
     confirmedBody: 'Keep this reference with you. A copy of this booking has been saved on this device.',
     reference: 'Booking reference',
+    qrTitle: 'Entry QR code',
+    qrHelp: 'Present this code with your booking reference at the entrance.',
+    qrDemo: 'Demo ticket · local verification only',
     home: 'Return to homepage',
     another: 'Book another performance',
     required: 'Please complete all required fields and accept the terms.',
@@ -143,6 +147,9 @@ const copy = {
     confirmed: 'حجزك جاهز',
     confirmedBody: 'احتفظ بهذا الرقم معك. تم حفظ نسخة من الحجز على هذا الجهاز.',
     reference: 'رقم الحجز',
+    qrTitle: 'رمز الدخول QR',
+    qrHelp: 'قدّم هذا الرمز مع رقم الحجز عند بوابة الدخول.',
+    qrDemo: 'تذكرة تجريبية · التحقق محلي فقط',
     home: 'العودة للرئيسية',
     another: 'حجز عرض آخر',
     required: 'أكمل كل البيانات المطلوبة ووافق على الشروط.',
@@ -401,6 +408,19 @@ function BookingSummary({ event, eventTitle, venue, formattedDate, selectedSeats
 }
 
 function Confirmation({ reference, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
+  const qrValue = JSON.stringify({
+    version: 1,
+    issuer: 'Cairo Opera House',
+    reference,
+    event: eventTitle,
+    date: formattedDate,
+    venue,
+    seats: selectedSeats.map((seat) => seat.label),
+    total,
+    currency: 'EGP',
+    demo: true,
+  });
+
   return (
     <section className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
       <div className="overflow-hidden border border-[#d3cbbc] bg-[#faf8f2] shadow-[0_20px_65px_rgba(35,22,16,.12)]">
@@ -408,6 +428,22 @@ function Confirmation({ reference, eventTitle, formattedDate, venue, selectedSea
           <span className="grid size-16 place-items-center rounded-full bg-[#7e2133] text-white"><Check className="size-8" /></span>
           <p className="mt-6 text-xs font-bold uppercase tracking-[.17em] text-[#7e2133]">{c.reference}</p>
           <p className="display-type mt-2 text-3xl font-semibold tracking-[.06em] sm:text-4xl" dir="ltr">{reference}</p>
+          <div className="mt-7 rounded-sm border border-[#d5cbb9] bg-white p-4 shadow-[0_10px_30px_rgba(35,22,16,.08)]">
+            <QRCodeSVG
+              value={qrValue}
+              size={184}
+              level="M"
+              marginSize={1}
+              bgColor="#ffffff"
+              fgColor="#171514"
+              role="img"
+              aria-label={`${c.qrTitle}: ${reference}`}
+              title={`${c.qrTitle}: ${reference}`}
+            />
+          </div>
+          <p className="mt-4 text-sm font-bold text-[#2e2925]">{c.qrTitle}</p>
+          <p className="mt-1 max-w-md text-sm leading-6 text-[#6b645c]">{c.qrHelp}</p>
+          <p className="mt-2 text-xs font-semibold text-[#9a7a36]">{c.qrDemo}</p>
         </div>
         <div className="grid gap-6 p-6 sm:grid-cols-2 sm:p-10">
           <div><p className="text-xs font-bold uppercase tracking-[.12em] text-[#7e2133]">{eventTitle}</p><p className="mt-3 text-sm leading-7 text-[#5f5850]">{formattedDate}<br />{venue}</p></div>
