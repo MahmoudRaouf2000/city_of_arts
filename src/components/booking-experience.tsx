@@ -271,7 +271,7 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
         </section>
 
         {reference ? (
-          <Confirmation reference={reference} eventId={selectedEvent.id} language={language} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
+          <Confirmation reference={reference} language={language} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
         ) : (
           <div className="mx-auto grid max-w-[1440px] gap-7 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
             <section className="border border-[#d6cfc3] bg-[#faf8f2] p-5 shadow-[0_18px_55px_rgba(32,22,16,.08)] sm:p-8">
@@ -407,14 +407,31 @@ function BookingSummary({ event, eventTitle, venue, formattedDate, selectedSeats
   );
 }
 
-function Confirmation({ reference, eventId, language, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; eventId: EventItem['id']; language: 'ar' | 'en'; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
-  const ticketUrl = new URL('/ticket', typeof window === 'undefined' ? 'https://cairo-opera-house.me974931.chatgpt.site' : window.location.origin);
-  ticketUrl.searchParams.set('ref', reference);
-  ticketUrl.searchParams.set('event', eventId);
-  ticketUrl.searchParams.set('seats', selectedSeats.map((seat) => seat.label).join(','));
-  ticketUrl.searchParams.set('total', String(total));
-  ticketUrl.searchParams.set('lang', language);
-  const qrValue = ticketUrl.toString();
+function Confirmation({ reference, language, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; language: 'ar' | 'en'; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
+  const seatLabels = selectedSeats.map((seat) => seat.label).join(', ');
+  const qrValue = language === 'ar'
+    ? [
+        'دار الأوبرا المصرية',
+        'تذكرة دخول تجريبية',
+        '',
+        `رقم الحجز: ${reference}`,
+        `العرض: ${eventTitle}`,
+        `التاريخ: ${formattedDate}`,
+        `المكان: ${venue}`,
+        `المقاعد: ${seatLabels}`,
+        `الإجمالي: ${formatMoney(total, locale)}`,
+      ].join('\n')
+    : [
+        'Cairo Opera House',
+        'Demo admission ticket',
+        '',
+        `Booking reference: ${reference}`,
+        `Performance: ${eventTitle}`,
+        `Date: ${formattedDate}`,
+        `Venue: ${venue}`,
+        `Seats: ${seatLabels}`,
+        `Total: ${formatMoney(total, locale)}`,
+      ].join('\n');
 
   return (
     <section className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
@@ -426,9 +443,9 @@ function Confirmation({ reference, eventId, language, eventTitle, formattedDate,
           <div className="mt-7 rounded-sm border border-[#d5cbb9] bg-white p-4 shadow-[0_10px_30px_rgba(35,22,16,.08)]">
             <QRCodeSVG
               value={qrValue}
-              size={184}
-              level="M"
-              marginSize={1}
+              size={200}
+              level="L"
+              marginSize={2}
               bgColor="#ffffff"
               fgColor="#171514"
               role="img"
