@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Clock3,
   CreditCard,
+  Film,
   MapPin,
   ShieldCheck,
   Ticket,
@@ -24,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Progress } from '@/components/ui/progress';
 import { BrandMark } from '@/src/components/brand-mark';
 import { LanguageSwitcher } from '@/src/components/language-switcher';
@@ -61,7 +61,11 @@ const copy = {
     title: 'Choose your night at the opera.',
     intro: 'Select your performance and seats, then add your contact details to review the booking.',
     steps: ['Seats', 'Your details', 'Confirmation'],
-    selectEvent: 'Select performance',
+    bookingStart: 'Choose your date and show',
+    bookingStartHelp: 'Select a date first, then choose from the films and performances available that day.',
+    selectDate: 'Choose a date',
+    selectEvent: 'Choose a film or performance',
+    selectedShow: 'Selected',
     chooseSeats: 'Choose your seats',
     seatHelp: 'Select up to 8 available seats. Prices are shown in Egyptian pounds.',
     stage: 'Stage',
@@ -95,6 +99,12 @@ const copy = {
     secure: 'Secure checkout design',
     confirmed: 'Your booking is ready',
     confirmedBody: 'Keep this reference with you. A copy of this booking has been saved on this device.',
+    digitalTicket: 'Digital admission ticket',
+    entryReady: 'Ready for entry',
+    performance: 'Performance',
+    dateLabel: 'Date',
+    timeLabel: 'Time',
+    venueLabel: 'Venue',
     reference: 'Booking reference',
     qrTitle: 'Entry QR code',
     qrHelp: 'Present this code with your booking reference at the entrance.',
@@ -112,7 +122,11 @@ const copy = {
     title: 'اختر ليلتك في الأوبرا.',
     intro: 'اختر العرض والمقاعد، ثم أضف بيانات التواصل لمراجعة الحجز وتأكيده.',
     steps: ['المقاعد', 'بياناتك', 'التأكيد'],
-    selectEvent: 'اختر العرض',
+    bookingStart: 'اختر التاريخ والعرض',
+    bookingStartHelp: 'اختر التاريخ أولًا، ثم اختر من الأفلام والعروض المتاحة في هذا اليوم.',
+    selectDate: 'اختر التاريخ',
+    selectEvent: 'اختر الفيلم أو العرض',
+    selectedShow: 'تم الاختيار',
     chooseSeats: 'اختر مقاعدك',
     seatHelp: 'يمكنك اختيار حتى ٨ مقاعد متاحة. الأسعار بالجنيه المصري.',
     stage: 'المسرح',
@@ -146,6 +160,12 @@ const copy = {
     secure: 'تصميم دفع آمن',
     confirmed: 'حجزك جاهز',
     confirmedBody: 'احتفظ بهذا الرقم معك. تم حفظ نسخة من الحجز على هذا الجهاز.',
+    digitalTicket: 'تذكرة دخول رقمية',
+    entryReady: 'جاهزة للدخول',
+    performance: 'العرض',
+    dateLabel: 'التاريخ',
+    timeLabel: 'الموعد',
+    venueLabel: 'المكان',
     reference: 'رقم الحجز',
     qrTitle: 'رمز الدخول QR',
     qrHelp: 'قدّم هذا الرمز مع رقم الحجز عند بوابة الدخول.',
@@ -169,7 +189,10 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
   const language = i18n.resolvedLanguage === 'ar' ? 'ar' : 'en';
   const c = copy[language];
   const locale = language === 'ar' ? 'ar-EG' : 'en-GB';
-  const [eventId, setEventId] = useState<EventItem['id']>(() => events.some((event) => event.id === initialEvent) ? initialEvent as EventItem['id'] : 'swanLake');
+  const initialSelectedEvent = events.find((event) => event.id === initialEvent) ?? events[0];
+  const availableDates = useMemo(() => [...new Set(events.map((event) => event.date.slice(0, 10)))].sort(), []);
+  const [selectedDate, setSelectedDate] = useState(() => initialSelectedEvent.date.slice(0, 10));
+  const [eventId, setEventId] = useState<EventItem['id']>(initialSelectedEvent.id);
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [form, setForm] = useState({ name: '', email: '', phone: '', terms: false });
@@ -177,6 +200,7 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
   const [reference, setReference] = useState('');
 
   const selectedEvent = events.find((event) => event.id === eventId) ?? events[0];
+  const eventsForSelectedDate = events.filter((event) => event.date.startsWith(selectedDate));
   const selectedSeats = useMemo(() => seats.filter((seat) => selected.includes(seat.id)), [selected]);
   const total = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
   const date = new Date(selectedEvent.date);
@@ -185,6 +209,21 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
   const venue = t(`events.items.${selectedEvent.id}.venue`);
   const ForwardIcon = language === 'ar' ? ArrowLeft : ArrowRight;
   const BackIcon = language === 'ar' ? ChevronRight : ChevronLeft;
+
+  const selectDate = (dateKey: string) => {
+    const firstEventForDate = events.find((event) => event.date.startsWith(dateKey));
+    if (!firstEventForDate) return;
+    setSelectedDate(dateKey);
+    setEventId(firstEventForDate.id);
+    setSelected([]);
+    setError('');
+  };
+
+  const selectEvent = (nextEventId: EventItem['id']) => {
+    setEventId(nextEventId);
+    setSelected([]);
+    setError('');
+  };
 
   const toggleSeat = (seat: Seat) => {
     if (seat.reserved) return;
@@ -271,20 +310,66 @@ export function BookingExperience({ initialEvent }: { initialEvent?: string }) {
         </section>
 
         {reference ? (
-          <Confirmation reference={reference} language={language} eventTitle={eventTitle} formattedDate={formattedDate} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
+          <Confirmation reference={reference} language={language} eventTitle={eventTitle} formattedDate={formattedDate} eventTime={selectedEvent.time} venue={venue} selectedSeats={selectedSeats} total={total} locale={locale} c={c} onReset={resetBooking} />
         ) : (
           <div className="mx-auto grid max-w-[1440px] gap-7 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-12">
             <section className="border border-[#d6cfc3] bg-[#faf8f2] p-5 shadow-[0_18px_55px_rgba(32,22,16,.08)] sm:p-8">
               {step === 0 && (
                 <div>
-                  <div className="grid gap-5 border-b border-[#ded7cc] pb-7 sm:grid-cols-[1fr_280px] sm:items-end">
-                    <div><h2 className="display-type text-3xl font-medium">{c.chooseSeats}</h2><p className="mt-2 text-sm leading-6 text-[#6b645c]">{c.seatHelp}</p></div>
+                  <div className="border-b border-[#ded7cc] pb-8">
                     <div>
-                      <Label htmlFor="performance" className="mb-2 block text-xs font-bold uppercase tracking-[.12em] text-[#6e2635]">{c.selectEvent}</Label>
-                      <NativeSelect id="performance" value={eventId} onChange={(event) => { setEventId(event.target.value as EventItem['id']); setSelected([]); }} className="w-full [&_select]:h-11 [&_select]:rounded-sm [&_select]:bg-white rtl:[&_select]:pr-3 rtl:[&_select]:pl-9 rtl:[_[data-slot=native-select-icon]]:right-auto rtl:[_[data-slot=native-select-icon]]:left-2.5">
-                        {events.map((event) => <NativeSelectOption key={event.id} value={event.id}>{t(`events.items.${event.id}.title`)}</NativeSelectOption>)}
-                      </NativeSelect>
+                      <h2 className="display-type text-3xl font-medium">{c.bookingStart}</h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b645c]">{c.bookingStartHelp}</p>
                     </div>
+
+                    <div className="mt-7">
+                      <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#6e2635]"><CalendarDays className="size-4" />{c.selectDate}</p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {availableDates.map((dateKey) => {
+                          const dateOption = new Date(`${dateKey}T12:00:00`);
+                          const active = selectedDate === dateKey;
+                          const weekday = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(dateOption);
+                          const dayAndMonth = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(dateOption);
+                          return (
+                            <button key={dateKey} type="button" onClick={() => selectDate(dateKey)} aria-pressed={active}
+                              className={`flex min-h-20 items-center justify-between gap-4 border px-4 py-3 text-start transition-colors ${active ? 'border-[#7e2133] bg-[#7e2133] text-white shadow-[0_7px_18px_rgba(126,33,51,.18)]' : 'border-[#d8d0c4] bg-white text-[#332d29] hover:border-[#9d6b74]'}`}>
+                              <span><span className={`block text-xs font-semibold ${active ? 'text-white/65' : 'text-[#7b7168]'}`}>{weekday}</span><span className="mt-1 block font-bold">{dayAndMonth}</span></span>
+                              {active && <Check className="size-5 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mt-7">
+                      <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#6e2635]"><Film className="size-4" />{c.selectEvent}</p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {eventsForSelectedDate.map((event) => {
+                          const active = event.id === eventId;
+                          const title = t(`events.items.${event.id}.title`);
+                          return (
+                            <button key={event.id} type="button" onClick={() => selectEvent(event.id)} aria-pressed={active}
+                              className={`group overflow-hidden border text-start transition-all ${active ? 'border-[#7e2133] ring-2 ring-[#7e2133]/15' : 'border-[#d8d0c4] hover:-translate-y-0.5 hover:border-[#a9874b]'}`}>
+                              <span className="relative block h-32 overflow-hidden bg-[#211d1b]">
+                                <Image src={event.image} alt="" fill sizes="(max-width: 640px) 100vw, 360px" className="object-cover opacity-75 transition-transform duration-500 group-hover:scale-[1.03]" style={{ objectPosition: event.imagePosition }} />
+                                <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                {active && <span className="absolute end-3 top-3 inline-flex items-center gap-1.5 bg-[#7e2133] px-2.5 py-1 text-[10px] font-bold text-white"><Check className="size-3" />{c.selectedShow}</span>}
+                                <span className="absolute inset-x-4 bottom-3 text-lg font-bold text-white">{title}</span>
+                              </span>
+                              <span className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-xs ${active ? 'bg-[#fbf0f1] text-[#6e2635]' : 'bg-white text-[#665f57]'}`}>
+                                <span className="inline-flex items-center gap-1.5"><Clock3 className="size-3.5" /><bdi>{event.time}</bdi></span>
+                                <span className="inline-flex items-center gap-1.5"><MapPin className="size-3.5" />{t(`events.items.${event.id}.venue`)}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-7">
+                    <h2 className="display-type text-3xl font-medium">{c.chooseSeats}</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#6b645c]">{c.seatHelp}</p>
                   </div>
 
                   <div className="mt-7 overflow-x-auto pb-2">
@@ -407,63 +492,127 @@ function BookingSummary({ event, eventTitle, venue, formattedDate, selectedSeats
   );
 }
 
-function Confirmation({ reference, language, eventTitle, formattedDate, venue, selectedSeats, total, locale, c, onReset }: { reference: string; language: 'ar' | 'en'; eventTitle: string; formattedDate: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
+function Confirmation({ reference, language, eventTitle, formattedDate, eventTime, venue, selectedSeats, total, locale, c, onReset }: { reference: string; language: 'ar' | 'en'; eventTitle: string; formattedDate: string; eventTime: string; venue: string; selectedSeats: Seat[]; total: number; locale: string; c: Copy; onReset: () => void }) {
   const seatLabels = selectedSeats.map((seat) => seat.label).join(', ');
   const qrValue = language === 'ar'
     ? [
-        'دار الأوبرا المصرية',
-        'تذكرة دخول تجريبية',
+        '🎭 دار الأوبرا المصرية',
+        '🎟️ تذكرة دخول رقمية',
+        '✅ حالة الحجز: مؤكد',
         '',
-        `رقم الحجز: ${reference}`,
+        'رقم الحجز',
+        reference,
+        '',
+        'تفاصيل العرض',
         `العرض: ${eventTitle}`,
         `التاريخ: ${formattedDate}`,
+        `الموعد: ${eventTime}`,
         `المكان: ${venue}`,
         `المقاعد: ${seatLabels}`,
+        `عدد التذاكر: ${selectedSeats.length}`,
         `الإجمالي: ${formatMoney(total, locale)}`,
+        '',
+        'يرجى إبراز هذا الرمز عند بوابة الدخول.',
+        'تذكرة تجريبية — التحقق محلي فقط',
       ].join('\n')
     : [
-        'Cairo Opera House',
-        'Demo admission ticket',
+        '🎭 Cairo Opera House',
+        '🎟️ Digital admission ticket',
+        '✅ Booking status: Confirmed',
         '',
-        `Booking reference: ${reference}`,
+        'Booking reference',
+        reference,
+        '',
+        'Performance details',
         `Performance: ${eventTitle}`,
         `Date: ${formattedDate}`,
+        `Time: ${eventTime}`,
         `Venue: ${venue}`,
         `Seats: ${seatLabels}`,
+        `Number of tickets: ${selectedSeats.length}`,
         `Total: ${formatMoney(total, locale)}`,
+        '',
+        'Please present this code at the entrance.',
+        'Demo ticket — local verification only',
       ].join('\n');
 
   return (
-    <section className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
-      <div className="overflow-hidden border border-[#d3cbbc] bg-[#faf8f2] shadow-[0_20px_65px_rgba(35,22,16,.12)]">
-        <div className="flex flex-col items-center border-b border-dashed border-[#cfc5b3] px-6 py-10 text-center sm:px-12">
-          <span className="grid size-16 place-items-center rounded-full bg-[#7e2133] text-white"><Check className="size-8" /></span>
-          <p className="mt-6 text-xs font-bold uppercase tracking-[.17em] text-[#7e2133]">{c.reference}</p>
-          <p className="display-type mt-2 text-3xl font-semibold tracking-[.06em] sm:text-4xl" dir="ltr">{reference}</p>
-          <div className="mt-7 rounded-sm border border-[#d5cbb9] bg-white p-4 shadow-[0_10px_30px_rgba(35,22,16,.08)]">
-            <QRCodeSVG
-              value={qrValue}
-              size={200}
-              level="L"
-              marginSize={2}
-              bgColor="#ffffff"
-              fgColor="#171514"
-              role="img"
-              aria-label={`${c.qrTitle}: ${reference}`}
-              title={`${c.qrTitle}: ${reference}`}
-            />
+    <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-16">
+      <div className="overflow-hidden border border-[#cfc5b5] bg-[#faf8f2] shadow-[0_28px_80px_rgba(35,22,16,.16)]">
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-[#181514] px-5 py-5 text-white sm:px-8">
+          <div className="flex items-center gap-3">
+            <BrandMark />
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#d7b567]">{tBrandName(language)}</p>
+              <p className="mt-0.5 text-sm font-semibold">{c.digitalTicket}</p>
+            </div>
           </div>
-          <p className="mt-4 text-sm font-bold text-[#2e2925]">{c.qrTitle}</p>
-          <p className="mt-1 max-w-md text-sm leading-6 text-[#6b645c]">{c.qrHelp}</p>
-          <p className="mt-2 text-xs font-semibold text-[#9a7a36]">{c.qrDemo}</p>
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d7b567]/40 bg-[#d7b567]/10 px-3 py-1.5 text-xs font-bold text-[#efd99d]"><Check className="size-3.5" />{c.entryReady}</span>
         </div>
-        <div className="grid gap-6 p-6 sm:grid-cols-2 sm:p-10">
-          <div><p className="text-xs font-bold uppercase tracking-[.12em] text-[#7e2133]">{eventTitle}</p><p className="mt-3 text-sm leading-7 text-[#5f5850]">{formattedDate}<br />{venue}</p></div>
-          <div className="sm:text-end"><p className="text-sm font-bold">{selectedSeats.map((seat) => seat.label).join(' · ')}</p><p className="display-type mt-3 text-3xl font-medium text-[#7e2133]">{formatMoney(total, locale)}</p></div>
+
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_310px]">
+          <div className="p-6 sm:p-9 lg:p-10">
+            <div className="flex flex-wrap items-start justify-between gap-5 border-b border-[#ded6c9] pb-7">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#7e2133]">{c.performance}</p>
+                <h2 className="display-type mt-2 text-3xl font-medium leading-tight sm:text-5xl">{eventTitle}</h2>
+              </div>
+              <div className="min-w-48 border-s-2 border-[#d7b567] ps-4">
+                <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[#81776d]">{c.reference}</p>
+                <p className="mt-1 font-mono text-lg font-bold tracking-[.08em] text-[#7e2133]" dir="ltr">{reference}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-x-7 gap-y-6 py-7 sm:grid-cols-2">
+              <TicketDetail icon={<CalendarDays />} label={c.dateLabel} value={formattedDate} />
+              <TicketDetail icon={<Clock3 />} label={c.timeLabel} value={eventTime} ltr />
+              <TicketDetail icon={<MapPin />} label={c.venueLabel} value={venue} />
+              <TicketDetail icon={<Ticket />} label={selectedSeats.length === 1 ? c.ticket : c.tickets} value={`${selectedSeats.length} ${selectedSeats.length === 1 ? c.ticket : c.tickets}`} />
+            </div>
+
+            <div className="flex flex-wrap items-end justify-between gap-5 border-t border-dashed border-[#cfc5b5] pt-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[#81776d]">{c.selectedSeats}</p>
+                <div className="mt-2 flex flex-wrap gap-2" dir="ltr">{selectedSeats.map((seat) => <span key={seat.id} className="grid min-w-10 place-items-center rounded-sm bg-[#eee4cf] px-2.5 py-1.5 text-xs font-bold text-[#6e2635]">{seat.label}</span>)}</div>
+              </div>
+              <div className="text-end">
+                <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[#81776d]">{c.total}</p>
+                <p className="display-type mt-1 text-3xl font-semibold text-[#7e2133]">{formatMoney(total, locale)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex flex-col items-center justify-center border-t border-dashed border-[#bfb4a3] bg-[#f1eadc] p-7 text-center lg:border-s lg:border-t-0">
+            <span className="absolute -start-3 -top-3 size-6 rounded-full bg-[#eee9df]" />
+            <span className="absolute -end-3 -top-3 size-6 rounded-full bg-[#eee9df] lg:-start-3 lg:-bottom-3 lg:end-auto lg:top-auto" />
+            <div className="rounded-md border border-[#d2c6b3] bg-white p-3 shadow-[0_12px_35px_rgba(35,22,16,.1)]">
+              <QRCodeSVG value={qrValue} size={210} level="L" marginSize={2} bgColor="#ffffff" fgColor="#171514" aria-label={`${c.qrTitle}: ${reference}`} title={`${c.qrTitle}: ${reference}`} />
+            </div>
+            <p className="mt-5 text-sm font-bold text-[#2e2925]">{c.qrTitle}</p>
+            <p className="mt-1 max-w-[240px] text-xs leading-5 text-[#70675e]">{c.qrHelp}</p>
+            <div className="mt-4 w-full border-t border-[#d5cbbb] pt-4">
+              <p className="font-mono text-xs font-bold tracking-[.12em] text-[#7e2133]" dir="ltr">{reference}</p>
+              <p className="mt-1 text-[10px] font-semibold text-[#9a7a36]">{c.qrDemo}</p>
+            </div>
+          </div>
         </div>
-        <div className="mx-6 mb-6 flex items-start gap-3 bg-[#f5ead0] p-4 text-sm leading-6 text-[#614d25] sm:mx-10 sm:mb-10"><CreditCard className="mt-0.5 size-5 shrink-0" /><p>{c.demoNotice}</p></div>
+
+        <div className="flex items-start gap-3 border-t border-[#e1d7c6] bg-[#f8f0df] px-6 py-4 text-xs leading-5 text-[#614d25] sm:px-9"><CreditCard className="mt-0.5 size-4 shrink-0" /><p>{c.demoNotice}</p></div>
       </div>
       <div className="mt-7 flex flex-wrap justify-center gap-3"><Link href="/" className="inline-flex h-12 items-center justify-center rounded-full border border-[#d6d0c3] bg-[#f2efe8] px-6 text-sm font-medium transition-colors hover:bg-[#e5e0d5]">{c.home}</Link><Button type="button" onClick={onReset} className="h-12 rounded-full bg-[#7e2133] px-6 font-bold hover:bg-[#601625]">{c.another}</Button></div>
     </section>
   );
+}
+
+function TicketDetail({ icon, label, value, ltr = false }: { icon: React.ReactNode; label: string; value: string; ltr?: boolean }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#eee4cf] text-[#7e2133] [&_svg]:size-4">{icon}</span>
+      <div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-[#81776d]">{label}</p><p className="mt-1 text-sm font-semibold leading-6 text-[#332d29]" dir={ltr ? 'ltr' : undefined}>{value}</p></div>
+    </div>
+  );
+}
+
+function tBrandName(language: 'ar' | 'en') {
+  return language === 'ar' ? 'دار الأوبرا المصرية' : 'Cairo Opera House';
 }
